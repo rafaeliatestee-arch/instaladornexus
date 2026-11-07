@@ -1,0 +1,30 @@
+name: Publicar instalador NEXUS Desktop 0.1.2
+on:
+  push:
+    paths:
+      - '.github/workflows/publish-nexus-v012.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Baixar o artefato Electron original (sem recompilar)
+        env:
+          ARTIFACT_URL: "https://sdmntprbrazilsouth.oaiusercontent.com/files/00000000-bf94-820e-bcc4-ee6ac009a257/raw?se=2026-11-07T22%3A31%3A31Z&sp=r&sv=2026-02-06&sr=b&scid=3ccbaf5f-ee15-5c17-bc04-d999a99d1080&skoid=ba7c401a-35d6-40a0-a0f3-2259cc50bbe2&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-11-07T12%3A17%3A08Z&ske=2026-11-08T12%3A17%3A08Z&sks=b&skv=2026-02-06&sig=ee0RszBCFApx9LhtpLWjzUlvHKpDOofKpWX5BbWr%2Ba0%3D"
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 --connect-timeout 30 --max-time 600 --output /tmp/nexus-installer.zip "$ARTIFACT_URL"
+          unzip -t /tmp/nexus-installer.zip
+          unzip -j /tmp/nexus-installer.zip NEXUS-Setup-0.1.2-x64.exe -d /tmp/
+      - name: Verificar SHA-256 do EXE original
+        run: |
+          echo 'a1b2fc222653bfee7ad52432f38d5cbf7fd7291ca81b3dd57a43b44d06d9836a  /tmp/NEXUS-Setup-0.1.2-x64.exe' | sha256sum --check --status
+          ls -lh /tmp/NEXUS-Setup-0.1.2-x64.exe
+      - name: Publicar Release pública permanente
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v0.1.2 /tmp/NEXUS-Setup-0.1.2-x64.exe --repo "$GITHUB_REPOSITORY" --title 'NEXUS Desktop 0.1.2 (Windows x64)' --notes 'Instalador Electron original do NEXUS Desktop, compilado em 03/11/2026. SHA-256: a1b2fc222653bfee7ad52432f38d5cbf7fd7291ca81b3dd57a43b44d06d9836a. O aplicativo carrega o NEXUS publicado no Lovable.'
